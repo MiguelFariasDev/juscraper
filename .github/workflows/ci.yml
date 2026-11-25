@@ -1,0 +1,18 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[dev]"
+      # Só os testes offline (cassetes). Os marcados "live" consultam os tribunais e não
+      # rodam em CI: dependem de rede brasileira e geram carga nos portais.
+      - run: pytest
