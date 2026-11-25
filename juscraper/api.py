@@ -22,7 +22,7 @@ from __future__ import annotations
 import hmac
 import logging
 from contextlib import asynccontextmanager
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, timezone
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, Path, Query, Request
@@ -34,7 +34,6 @@ from juscraper import __version__, tribunais
 from juscraper.errors import JuscraperError
 from juscraper.http import ConfigHttp, PoliticaHost, USER_AGENT_PADRAO
 from juscraper.models import Movimentacao, ResultadoConsulta, _Modelo
-from juscraper.scrapers.base import FUSO_BRASILIA
 from juscraper.servico import Juscraper
 
 log = logging.getLogger("juscraper")
@@ -145,12 +144,10 @@ def criar_app(config: Configuracao | None = None, servico: Juscraper | None = No
             numero,
             instancias=_instancias(instancias),
             max_paginas_movimentacoes=config.max_paginas_movimentacoes,
+            desde=desde,
             usar_cache=not sem_cache,
         )
         movimentos = resultado.movimentos_consolidados
-        if desde is not None:
-            corte = datetime.combine(desde, time.min, tzinfo=FUSO_BRASILIA)
-            movimentos = [m for m in movimentos if m.data_hora and m.data_hora >= corte]
         return MovimentacoesResposta(
             numero_processo=resultado.numero_processo,
             tribunal=resultado.tribunal,

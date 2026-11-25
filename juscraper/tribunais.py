@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -73,16 +74,66 @@ TRIBUNAIS: dict[str, Tribunal] = {
             ),
             "Nova consulta pública do PJe (API REST).",
         ),
-        Tribunal("TJMG", "PJe", "indisponivel", "https://pje-consulta-publica.tjmg.jus.br",
-                 observacao="a consulta pública exige captcha.", erro=CaptchaExigido),
-        Tribunal("TJBA", "PJe", "indisponivel", "https://consultapublicapje.tjba.jus.br",
-                 observacao="o portal recusou as conexões nos testes.", erro=AcessoBloqueado),
+        # -- PJe com a consulta pública ANTIGA (JSF), todas com reCAPTCHA (nov/2026) --------
+        *(
+            Tribunal(sigla, "PJe", "indisponivel", portal,
+                     observacao="a consulta pública do PJe exige reCAPTCHA.", erro=CaptchaExigido)
+            for sigla, portal in (
+                ("TJMG", "https://pje-consulta-publica.tjmg.jus.br"),
+                ("TJBA", "https://pje.tjba.jus.br"),
+                ("TJPE", "https://pje.cloud.tjpe.jus.br"),
+                ("TJMA", "https://pje.tjma.jus.br"),
+                ("TJRO", "https://pjepg-consulta.tjro.jus.br"),
+            )
+        ),
+        # -- Firewall anti-robô (Cloudflare) ------------------------------------------------
+        Tribunal("TJPB", "PJe", "indisponivel", "https://consultapublica.tjpb.jus.br",
+                 observacao="o firewall (Cloudflare) bloqueia acesso automatizado.", erro=AcessoBloqueado),
+        Tribunal("TJAP", "PJe", "indisponivel", "https://pje.tjap.jus.br",
+                 observacao="o portal exige o desafio JavaScript da Cloudflare.", erro=AcessoBloqueado),
+        # -- Bloqueio geográfico: só testável a partir de um servidor no Brasil -------------
+        Tribunal("TJES", "PJe", "indisponivel", "https://pje.tjes.jus.br",
+                 observacao="o portal bloqueia acessos de fora do Brasil; não foi possível "
+                            "verificar qual consulta ele usa.", erro=AcessoBloqueado),
+        Tribunal("TJRN", "PJe", "indisponivel", "https://pje1gconsulta.tjrn.jus.br",
+                 observacao="o portal bloqueia acessos de fora do Brasil; não foi possível "
+                            "verificar qual consulta ele usa.", erro=AcessoBloqueado),
+        # -- eproc ---------------------------------------------------------------------------
         Tribunal("TJSC", "eproc", "indisponivel", "https://eproc1g.tjsc.jus.br",
                  observacao="o firewall do tribunal bloqueia acesso automatizado.", erro=AcessoBloqueado),
         Tribunal("TJRS", "eproc", "indisponivel", "https://eproc1g.tjrs.jus.br",
                  observacao="o portal responde 403 a acesso automatizado.", erro=AcessoBloqueado),
     ]
 }
+
+
+def _pje_rest_do_ambiente(valor: str | None) -> list[Tribunal]:
+    """Tribunais PJe com a NOVA consulta pública, declarados por configuração.
+
+    ``JUSCRAPER_PJE_REST="TJXX=https://api-do-tjxx|https://portal-do-tjxx;TJYY=…"``
+
+    Quando um tribunal migrar para a consulta nova (o front-end Angular com
+    ``assets/env.js``), basta descobrir o ``apiUrl`` com ``tools/detectar_consulta_pje.py`` e
+    declarar aqui — sem nova versão do juscraper. Uma entrada sobrescreve o registro fixo.
+    """
+    tribunais: list[Tribunal] = []
+    for item in filter(None, (parte.strip() for parte in (valor or "").split(";"))):
+        sigla, _, urls = item.partition("=")
+        api, _, portal = urls.partition("|")
+        sigla, api, portal = sigla.strip().upper(), api.strip(), (portal.strip() or None)
+        if not sigla or not api.startswith("https://"):
+            raise ValueError(f"JUSCRAPER_PJE_REST inválido: {item!r}")
+        tribunais.append(
+            Tribunal(
+                sigla, "PJe", "experimental", portal or api,
+                lambda s=sigla, a=api, p=portal: PjeConsultaPublicaScraper(s, a, url_portal=p),
+                "Nova consulta pública do PJe, declarada por configuração.",
+            )
+        )
+    return tribunais
+
+
+TRIBUNAIS.update({t.sigla: t for t in _pje_rest_do_ambiente(os.environ.get("JUSCRAPER_PJE_REST"))})
 
 
 def obter(sigla: str | None) -> Tribunal:

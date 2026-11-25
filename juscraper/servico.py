@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+import hashlib
 import time
 from collections import OrderedDict
-from datetime import datetime, timezone
+from collections import Counter
+from datetime import date, datetime, timezone
 
 import httpx
 
 from juscraper import tribunais
 from juscraper.cnj import NumeroCnj
 from juscraper.http import ConfigHttp, Limitadores, Sessao
-from juscraper.models import ResultadoConsulta
+from juscraper.models import Movimentacao, ResultadoConsulta
 from juscraper.scrapers.base import OpcoesConsulta
 
 
@@ -67,6 +69,7 @@ class Juscraper:
         instancias: tuple[str, ...] = ("1", "2"),
         max_movimentacoes: int | None = None,
         max_paginas_movimentacoes: int = 100,
+        desde: date | None = None,
         usar_cache: bool = True,
     ) -> ResultadoConsulta:
         """Consulta o processo no tribunal derivado do próprio número.
@@ -82,6 +85,7 @@ class Juscraper:
             instancias=instancias,
             max_paginas_movimentacoes=max_paginas_movimentacoes,
             max_movimentacoes=max_movimentacoes,
+            desde=desde,
         )
         chave = (cnj.digitos, opcoes)
         if usar_cache and (em_cache := self._cache.get(chave)):
@@ -93,6 +97,9 @@ class Juscraper:
         for processo in resultado.processos:
             processo.tribunal = tribunal.sigla
             processo.movimentos.sort(key=lambda m: m.data_hora is None)  # sem data vai pro fim, estável
+            atribuir_ids(cnj.digitos, processo.movimentos)
+            if desde is not None:
+                processo.movimentos = [m for m in processo.movimentos if not opcoes.antes_da_janela(m)]
 
         consulta = ResultadoConsulta(
             numero_processo=cnj.formatado,
@@ -107,3 +114,30 @@ class Juscraper:
         if not consulta.avisos:
             self._cache.set(chave, consulta)
         return consulta
+
+
+def atribuir_ids(digitos: str, movimentos: list[Movimentacao]) -> None:
+    """Dá a cada movimentação um id estável entre consultas.
+
+    O id é o hash de (processo, instância, data/hora, nome, complemento) mais um ORDINAL:
+    o e-SAJ só informa a data, e dois andamentos idênticos no mesmo dia ("Expedido
+    Certidão", duas vezes) são legítimos — sem o ordinal, o segundo seria descartado como
+    duplicata e nunca notificado.
+
+    O ordinal é contado do mais ANTIGO para o mais recente dentro do mesmo grupo idêntico.
+    Andamentos novos entram no topo da lista, então os existentes não mudam de número. A
+    garantia vale quando o dia inteiro foi lido — o que acontece com ``desde`` (a paginação
+    só para depois de passar do dia) e com ``movimentosCompletos = true``. Com
+    ``max_movimentacoes``, o dia mais antigo da lista pode estar cortado.
+    """
+    vistos: Counter[tuple] = Counter()
+    for movimento in reversed(movimentos):
+        chave = (
+            movimento.instancia or "",
+            movimento.data_hora.isoformat() if movimento.data_hora else "",
+            movimento.nome,
+            movimento.complemento or "",
+        )
+        vistos[chave] += 1
+        bruto = "\x1f".join((digitos, *chave, str(vistos[chave])))
+        movimento.id = hashlib.sha256(bruto.encode("utf-8")).hexdigest()[:32]

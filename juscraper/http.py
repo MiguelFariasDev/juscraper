@@ -39,7 +39,11 @@ _STATUS_TRANSITORIOS = {408, 429, 500, 502, 503, 504}
 # Marcadores de páginas de bloqueio conhecidas (WAF do TJSC, Cloudflare, F5…).
 _MARCADORES_BLOQUEIO = re.compile(
     r"Bloqueio tempor[aá]rio|classificaram esse acesso como n[aã]o autorizado|"
-    r"Request Rejected|Attention Required! \| Cloudflare|Support ID[^<]{0,40}_BOT\b",
+    r"Request Rejected|Attention Required! \| Cloudflare|Support ID[^<]{0,40}_BOT\b|"
+    r"<title>Just a moment\.\.\.</title>|Sorry, you have been blocked|"
+    # Bloqueio geográfico (TJES via CloudFront, TJRN): o portal recusa quem está fora do
+    # Brasil. Não é bloqueio de robô — de um servidor no Brasil o portal pode responder.
+    r"configured to block access from your country|localizados no exterior",
     re.IGNORECASE,
 )
 # Captcha *ativo* na página (widget renderizado), não a mera menção em JavaScript.

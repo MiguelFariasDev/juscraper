@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from juscraper.errors import RespostaInesperada
@@ -95,7 +96,9 @@ class PjeConsultaPublicaScraper(Scraper):
         limite = opcoes.max_paginas_movimentacoes
         if opcoes.max_movimentacoes is not None:
             limite = min(limite, -(-opcoes.max_movimentacoes // 15))
-        registros, completos = await self._paginar(sessao, f"{base}/movimentacoes", limite)
+        registros, completos = await self._paginar(
+            sessao, f"{base}/movimentacoes", limite, parar=_parar_antes_de(opcoes)
+        )
         movimentos = parse_movimentacoes(registros)
         if opcoes.max_movimentacoes is not None and len(movimentos) > opcoes.max_movimentacoes:
             movimentos, completos = movimentos[: opcoes.max_movimentacoes], False
@@ -118,17 +121,37 @@ class PjeConsultaPublicaScraper(Scraper):
             raise RespostaInesperada(f"PJe respondeu fora do envelope esperado em {caminho}.", tribunal=self.tribunal)
         return corpo
 
-    async def _paginar(self, sessao: Sessao, caminho: str, max_paginas: int) -> tuple[list[dict[str, Any]], bool]:
+    async def _paginar(
+        self,
+        sessao: Sessao,
+        caminho: str,
+        max_paginas: int,
+        parar: Callable[[dict[str, Any]], bool] | None = None,
+    ) -> tuple[list[dict[str, Any]], bool]:
         registros: list[dict[str, Any]] = []
         pagina = 0
         while pagina < max_paginas:
             corpo = await self._get(sessao, caminho, {"page": pagina})
-            registros.extend(r for r in corpo.get("result") or [] if isinstance(r, dict))
+            novos = [r for r in corpo.get("result") or [] if isinstance(r, dict)]
+            registros.extend(novos)
+            if parar and novos and parar(novos[-1]):
+                return registros, True
             ultima = int((corpo.get("pageInfo") or {}).get("last") or 0)
             pagina += 1
             if pagina >= ultima:
                 return registros, True
         return registros, False
+
+
+def _parar_antes_de(opcoes: OpcoesConsulta) -> Callable[[dict[str, Any]], bool] | None:
+    if opcoes.desde is None:
+        return None
+
+    def parar(registro: dict[str, Any]) -> bool:
+        data = data_hora_br(registro.get("dataAtualizacao"))
+        return data is not None and data.date() < opcoes.desde  # type: ignore[operator]
+
+    return parar
 
 
 # -- parsers (puros) ------------------------------------------------------------------

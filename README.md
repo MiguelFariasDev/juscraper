@@ -33,10 +33,33 @@ juscraper consultar 0000248-42.2024.8.26.0319
 | TJAC | e-SAJ | experimental | parte do acervo está no Projudi, que não é coberto |
 | TJMS | e-SAJ | experimental | portal não respondeu nos testes (timeout) |
 | TJAM | e-SAJ | experimental | portal recusou conexões de fora do Brasil nos testes |
-| TJMG | PJe | indisponível | consulta pública exige **captcha** |
-| TJBA | PJe | indisponível | portal recusou conexões |
+| TJMG, TJBA, TJPE, TJMA, TJRO | PJe | indisponível | consulta pública **antiga** (JSF), com reCAPTCHA |
+| TJPB, TJAP | PJe | indisponível | firewall anti-robô da Cloudflare |
+| TJES, TJRN | PJe | indisponível | **bloqueio geográfico**: recusam acessos de fora do Brasil |
 | TJSC | eproc | indisponível | firewall bloqueia acesso automatizado |
 | TJRS | eproc | indisponível | HTTP 403 para acesso automatizado |
+
+### Mais tribunais PJe: o que se sabe (nov/2026)
+
+A nova consulta pública do PJe (Angular + API REST, sem captcha) só foi encontrada no
+**TJDFT**. Ela parece ser uma implantação do próprio tribunal, não um padrão distribuído
+pelo CNJ. Os demais TJs com PJe que responderam ainda usam a consulta antiga com
+reCAPTCHA, que não é suportada.
+
+Quando um tribunal migrar, não é preciso nova versão do juscraper:
+
+```bash
+# 1. a partir de um servidor no Brasil
+python tools/detectar_consulta_pje.py https://<portal-de-consulta> --sigla TJXX
+# 2. a linha que ele imprime vai para o ambiente
+JUSCRAPER_PJE_REST="TJXX=https://<api>|https://<portal>"
+```
+
+### Hospede no Brasil
+
+TJES, TJRN e provavelmente TJAM e TJMS recusam conexões de fora do país. Rode o juscraper
+numa região brasileira (Azure *Brazil South*, onde o Iustitia já está) e refaça os testes
+desses tribunais com `tools/detectar_consulta_pje.py` e `pytest -m live`.
 
 *Validado* significa fluxo confirmado com processo real em novembro de 2026 e coberto por
 teste de regressão com cassete gravado. *Experimental* é o mesmo sistema de um validado:
@@ -139,7 +162,13 @@ juscraper serve --port 8000
 | `GET /health` | liveness (sem autenticação) |
 | `GET /v1/tribunais` | cobertura e estado de cada tribunal |
 | `GET /v1/processos/{numero}` | consulta completa. Query: `instancias=1,2`, `max_movimentacoes`, `sem_cache` |
-| `GET /v1/processos/{numero}/movimentacoes` | só andamentos, consolidados. Query: `desde=AAAA-MM-DD` para sincronização incremental |
+| `GET /v1/processos/{numero}/movimentacoes` | só andamentos, consolidados. Query: `desde=AAAA-MM-DD` para acompanhamento incremental: a paginação **para** ao passar da data |
+
+Cada movimentação tem um `id` **estável entre consultas** (hash de processo, instância,
+data, nome e complemento, mais um ordinal para andamentos idênticos no mesmo dia). É a
+chave de deduplicação do acompanhamento diário do Iustitia. A garantia vale para listas
+completas e para consultas com `desde`. Com `max_movimentacoes`, o dia mais antigo pode
+vir cortado.
 
 A documentação interativa (OpenAPI) fica em `/docs`.
 

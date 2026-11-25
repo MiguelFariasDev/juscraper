@@ -10,7 +10,7 @@ from datetime import date, datetime
 from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
-from juscraper.models import Polo, Processo
+from juscraper.models import Movimentacao, Polo, Processo
 
 if TYPE_CHECKING:
     from juscraper.cnj import NumeroCnj
@@ -30,6 +30,17 @@ class OpcoesConsulta:
     max_paginas_movimentacoes: int = 100
     #: Para de paginar ao atingir este número de movimentações (None = todas).
     max_movimentacoes: int | None = None
+    #: Só movimentações nesta data ou depois. A paginação para assim que passa da data
+    #: (os portais devolvem do mais recente para o mais antigo): é o que torna barato o
+    #: acompanhamento diário, que só quer o que mudou desde a última execução.
+    desde: date | None = None
+
+    def antes_da_janela(self, movimento: "Movimentacao") -> bool:
+        return (
+            self.desde is not None
+            and movimento.data_hora is not None
+            and movimento.data_hora.date() < self.desde
+        )
 
 
 @dataclass(slots=True)

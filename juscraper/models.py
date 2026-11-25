@@ -32,6 +32,13 @@ class Movimentacao(_Modelo):
     texto livre que o cartório anexa a ele (no e-SAJ, a linha em itálico).
     """
 
+    id: str | None = Field(
+        default=None,
+        description=(
+            "Identificador estável para deduplicação: o mesmo andamento tem o mesmo id em "
+            "consultas diferentes. Ver juscraper.servico.atribuir_ids."
+        ),
+    )
     nome: str
     data_hora: datetime | None = Field(
         default=None,

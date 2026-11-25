@@ -182,7 +182,13 @@ class EsajScraper(Scraper):
                 params["cursor"] = cursor
             resposta = await sessao.get(url, params=params, headers={"X-Requested-With": "XMLHttpRequest"})
             soup = BeautifulSoup(resposta.text, "lxml")
-            movimentos.extend(parse_linhas_movimentacao(soup))
+            pagina = parse_linhas_movimentacao(soup)
+            movimentos.extend(pagina)
+
+            # Passou da janela pedida: o resto é mais antigo. "Completo" aqui significa
+            # completo para a janela — o filtro final descarta o que ficou antes dela.
+            if pagina and opcoes.antes_da_janela(pagina[-1]):
+                return movimentos, True
 
             if opcoes.max_movimentacoes is not None and len(movimentos) >= opcoes.max_movimentacoes:
                 return movimentos[: opcoes.max_movimentacoes], False
