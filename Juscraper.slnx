@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Juscraper.Core/Juscraper.Core.csproj" />
+    <Project Path="src/Juscraper.Api/Juscraper.Api.csproj" />
+    <Project Path="src/Juscraper.Cli/Juscraper.Cli.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Juscraper.Tests/Juscraper.Tests.csproj" />
+  </Folder>
+</Solution>

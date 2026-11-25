@@ -13,7 +13,7 @@ public sealed class JuscraperOptions
     /// <summary>Endereço do serviço juscraper, ex.: http://juscraper:8000/.</summary>
     public string BaseUrl { get; init; } = "http://localhost:8000/";
 
-    /// <summary>Valor de X-Api-Key (uma das chaves em JUSCRAPER_API_KEYS do serviço).</summary>
+    /// <summary>Valor de X-Api-Key (uma das chaves em Juscraper:Api:ApiKeys do serviço).</summary>
     public string? ApiKey { get; init; }
 
     /// <summary>

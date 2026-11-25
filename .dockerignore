@@ -1,8 +1,7 @@
-.venv
+**/bin
+**/obj
 .git
-.pytest_cache
-__pycache__
+.venv
 tests
-tools
-integrations
 docs
+integrations

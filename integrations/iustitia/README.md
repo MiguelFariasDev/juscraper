@@ -1,10 +1,10 @@
 # Integração com o Iustitia
 
 Estes arquivos são o adaptador .NET que liga o juscraper à porta
-`IConsultaProcessoTribunal` do módulo Legal do Iustitia. Foram escritos seguindo as
-convenções do repositório (Result Pattern, `ErrorFactory`, `AddStandardResilienceHandler`,
-nunca logar o corpo da resposta), mas **não foram compilados**: o ambiente onde foram
-escritos não tinha o SDK .NET. Rode `dotnet build` e os testes ao copiar.
+`IConsultaProcessoTribunal` do módulo Legal do Iustitia, seguindo as convenções do
+repositório (Result Pattern, `ErrorFactory`, `AddStandardResilienceHandler`, nunca logar o
+corpo da resposta). O acompanhamento noturno das movimentações (job, persistência e
+notificação ao cliente) é entregue à parte, como mudança no próprio Iustitia.
 
 ## Por que isso encaixa sem refatoração
 
@@ -41,7 +41,7 @@ prazo de validade". Assim, trocar a fonte exige só um novo adaptador. O handler
    ```
 
    ```bash
-   dotnet user-secrets set "Juscraper:ApiKey" "<uma das JUSCRAPER_API_KEYS>"
+   dotnet user-secrets set "Juscraper:ApiKey" "<uma das Juscraper__Api__ApiKeys>"
    ```
 
 5. Suba o serviço junto (docker-compose do Iustitia):
@@ -50,8 +50,8 @@ prazo de validade". Assim, trocar a fonte exige só um novo adaptador. O handler
    juscraper:
      build: ../juscraper
      environment:
-       JUSCRAPER_API_KEYS: ${JUSCRAPER_API_KEY}
-     ports: ["8000:8000"]
+       Juscraper__Api__ApiKeys: ${JUSCRAPER_API_KEY}
+     ports: ["8000:8080"]
    ```
 
 ## Decisões do adaptador

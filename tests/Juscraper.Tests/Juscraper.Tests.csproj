@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <Using Include="Xunit" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Juscraper.Core\Juscraper.Core.csproj" />
+    <ProjectReference Include="..\..\src\Juscraper.Api\Juscraper.Api.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Cassetes gravados dos portais reais (pseudonimizados) e fixtures de bloqueio. -->
+    <None Include="..\cassettes\*.json" LinkBase="cassettes" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\fixtures\*" LinkBase="fixtures" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

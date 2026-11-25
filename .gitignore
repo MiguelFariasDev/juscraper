@@ -1,8 +1,10 @@
+bin/
+obj/
+*.user
+.vs/
+.idea/
+TestResults/
+.env
+# restos da versão Python
 .venv/
 __pycache__/
-*.pyc
-.pytest_cache/
-.env
-dist/
-build/
-*.egg-info/

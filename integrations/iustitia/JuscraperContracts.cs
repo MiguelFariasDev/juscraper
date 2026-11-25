@@ -27,6 +27,7 @@ internal sealed record JuscraperProcesso(
     bool MovimentosCompletos);
 
 internal sealed record JuscraperMovimento(
+    string? Id,
     string Nome,
     DateTimeOffset? DataHora,
     string? Complemento,

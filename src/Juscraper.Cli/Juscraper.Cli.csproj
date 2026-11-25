@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Juscraper.Cli</RootNamespace>
+    <AssemblyName>juscraper</AssemblyName>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>juscraper</ToolCommandName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Juscraper.Core\Juscraper.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+</Project>
