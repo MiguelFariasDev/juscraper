@@ -188,6 +188,10 @@ dotnet run --project src/Juscraper.Cli -- detectar-pje <portal> [--sigla TJXX]
 dotnet run --project src/Juscraper.Cli -- gravar-cassete <numero> tests/cassettes/<nome>.json [--instancias 1]
 ```
 
+### Integração com o Iustitia
+
+Contrato, regra de fallback (juscraper como fonte principal, DataJud/CNJ como reserva) e acompanhamento noturno: [docs/integracao-iustitia.md](docs/integracao-iustitia.md).
+
 ## Testes
 
 ```bash
